@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * state lives in [StatusBoard], which serializes its own updates.
  */
 class OtaEngine(
-    shell: Shell,
+    private val shell: Shell,
     private val store: StateStore,
     private val log: EventLog,
     private val platform: Platform,
@@ -58,6 +58,14 @@ class OtaEngine(
     override suspend fun patch(): ActionResult = action("patch", block = actions::patch)
 
     override suspend fun reboot(): ActionResult = action("reboot", block = actions::reboot)
+
+    // Read-only for device state, so it does not take the action mutex.
+    override suspend fun openSystemUpdate(): Boolean = withContext(io) {
+        val result = shell.run("am start -n $UPDATER_ACTIVITY 2>&1", UPDATER_TIMEOUT_MS)
+        val started = result.ok && result.stdout.lineSequence().none { it.startsWith("Error") || "Exception" in it }
+        log.log("open updater: ${if (started) "ok" else "failed (${result.code})"}")
+        started
+    }
 
     override suspend fun setAutoPatch(enabled: Boolean) {
         val updated = settingsFlow.value.copy(autoPatch = enabled)
@@ -145,6 +153,9 @@ class OtaEngine(
     }
 
     private companion object {
+        const val UPDATER_ACTIVITY = "com.android.updater/.MainActivity"
+        const val UPDATER_TIMEOUT_MS = 5_000L
+
         /** Returned by [action] when its gate did not pass; compared by identity. */
         val SKIPPED = ActionResult(false, "")
     }

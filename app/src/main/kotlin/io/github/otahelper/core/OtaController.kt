@@ -29,6 +29,12 @@ interface OtaController {
 
     suspend fun reboot(): ActionResult
 
+    /**
+     * Opens the Xiaomi (HyperOS) system updater through root; its activity is permission-protected, so a
+     * plain intent cannot reach it. Returns false when that failed and the UI should fall back to intents.
+     */
+    suspend fun openSystemUpdate(): Boolean
+
     suspend fun setAutoPatch(enabled: Boolean)
 
     /** Most recent log lines, oldest first. */

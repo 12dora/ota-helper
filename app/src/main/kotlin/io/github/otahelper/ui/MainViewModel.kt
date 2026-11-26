@@ -100,6 +100,8 @@ internal class MainViewModel(private val controller: OtaController) : ViewModel(
 
     suspend fun readLog(): List<String> = controller.readLog()
 
+    suspend fun openSystemUpdate(): Boolean = controller.openSystemUpdate()
+
     private fun snapshot() = UiState(
         status = controller.status.value,
         settings = controller.settings.value,

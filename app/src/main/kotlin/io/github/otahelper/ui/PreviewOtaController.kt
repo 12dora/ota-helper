@@ -82,6 +82,8 @@ internal class PreviewOtaController(
         mutableSettings.update { it.copy(autoPatch = enabled) }
     }
 
+    override suspend fun openSystemUpdate(): Boolean = false
+
     override suspend fun readLog(): List<String> {
         delay(300)
         return logLines.value
