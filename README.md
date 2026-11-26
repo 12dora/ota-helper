@@ -26,6 +26,8 @@
 2. 在系统更新中安装新版本，安装完成后**不要重启**
 3. 点 **立即重启**（新系统会自动修补）
 
+已在小米 HyperOS 设备上完成真实 OTA 验证（OS4.0.5.0 → OS4.0.7.0，Root 保留）。
+
 ## 要求
 
 - Android 14 及以上的 A/B（含虚拟 A/B）分区设备
@@ -75,6 +77,8 @@ init_boot/
 | 准备更新后未安装更新就重启，Root 丢失 | 在 fastboot 模式下刷入对应版本的 `init_boot_ksu.img`：<br>`fastboot flash init_boot init_boot_ksu.img` |
 | 新系统启动后没有 Root | 刷入 `pending/` 或新版本目录中的 `init_boot_ksu.img`。 |
 | 提示"操作未完成" | 按提示判断能否重启，并在 **日志** 中查看详情。 |
+| 重新安装后提示没有 Root | KernelSU 仍记着旧的应用 ID。在 KernelSU › 超级用户 中下拉刷新，然后关闭再打开 OTA 助手的授权。 |
+| 重启后备份仍在 `pending/` | 打开一次 OTA 助手即可完成整理。允许它自启动（HyperOS：设置 › 应用设置 › 自启动）后会在开机时自动完成。 |
 
 ## 构建
 
