@@ -1,0 +1,40 @@
+# Overrides on top of detekt's default config (buildUponDefaultConfig = true).
+# Every finding fails the build: warningsAsErrors promotes all severities, and there is no baseline.
+
+config:
+  validation: true
+  warningsAsErrors: true
+
+comments:
+  UndocumentedPublicClass:
+    active: false
+
+complexity:
+  LongParameterList:
+    # Compose UI takes state and callbacks as parameters by design.
+    ignoreAnnotated: ['Composable']
+
+naming:
+  FunctionNaming:
+    # Composables are PascalCase by Compose convention.
+    ignoreAnnotated: ['Composable']
+
+exceptions:
+  TooGenericExceptionCaught:
+    # Root shell and partition I/O fail in many ways; boundaries convert any failure into a reported error.
+    excludes: ['**/test/**']
+  SwallowedException:
+    excludes: ['**/test/**']
+
+style:
+  MaxLineLength:
+    maxLineLength: 120
+  ReturnCount:
+    max: 4
+    excludeReturnFromLambda: true
+    excludeGuardClauses: true
+
+ktlint:
+  code_style: 'intellij_idea'
+  MaximumLineLength:
+    maxLineLength: 120

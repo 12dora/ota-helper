@@ -1,0 +1,22 @@
+# Local machine config (contains sdk.dir)
+local.properties
+
+# Build output
+.gradle/
+.kotlin/
+build/
+captures/
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+
+# Signing material never lives in the repo
+*.keystore
+*.jks
+
+# Local agent worktrees
+.claude/
