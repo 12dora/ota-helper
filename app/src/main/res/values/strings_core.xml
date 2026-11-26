@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Action results and status errors (engine). -->
+    <string name="core_msg_prepare_done">Stock boot image restored. Install the update in Settings › System update.</string>
+    <string name="core_msg_cancel_done">Reverted. The current system is patched again.</string>
+    <string name="core_msg_patch_done">New system patched. Restart to finish the update.</string>
+    <string name="core_msg_rebooting">Restarting</string>
+    <string name="core_msg_no_root">Root access isn\'t granted. Allow it for this app in KernelSU.</string>
+    <string name="core_msg_root_lost">Root access was lost. To restore it, flash %1$s with fastboot.</string>
+    <string name="core_msg_not_ab">Requires a device with A/B system partitions.</string>
+    <string name="core_msg_no_kernelsu">KernelSU isn\'t installed.</string>
+    <string name="core_msg_not_lkm">Requires KernelSU in LKM mode.</string>
+    <string name="core_msg_unsupported_partition">Boot partition \"%1$s\" isn\'t supported.</string>
+    <string name="core_msg_tools_missing">KernelSU is missing components. Reinstall it in the KernelSU app.</string>
+    <string name="core_msg_read_failed">Couldn\'t read the device status.</string>
+    <string name="core_msg_unknown_image">Couldn\'t identify the boot image.</string>
+    <string name="core_msg_wrong_phase">Not available right now.</string>
+    <string name="core_msg_backup_missing">KernelSU\'s backup of the stock boot image wasn\'t found.</string>
+    <string name="core_msg_backup_invalid">The stock boot image backup failed verification.</string>
+    <string name="core_msg_save_failed">Couldn\'t save a backup to %1$s.</string>
+    <string name="core_msg_backup_dir_invalid">The backup folder isn\'t valid.</string>
+    <string name="core_msg_state_changed">The boot partition changed during the operation. Nothing was flashed.</string>
+    <string name="core_msg_flash_failed">Flashing failed. The partition wasn\'t changed.</string>
+    <string name="core_msg_verify_failed">Verification after flashing failed. Stopped. See the log for details.</string>
+    <string name="core_msg_engine_unknown">Couldn\'t read the system update status.</string>
+    <string name="core_msg_update_running">A system update is being installed.</string>
+    <string name="core_msg_update_installed">The update is already installed. Patch the new system first.</string>
+    <string name="core_msg_not_installed">The system update isn\'t installed yet.</string>
+    <string name="core_msg_install_failed">The system update failed to install.</string>
+    <string name="core_msg_update_not_applied">The update didn\'t take effect. The device started the previous system.</string>
+    <string name="core_msg_reboot_failed">Couldn\'t restart.</string>
+    <string name="core_msg_internal">Something went wrong. See the log for details.</string>
+
+    <!-- Notifications. -->
+    <string name="core_channel_progress">Update progress</string>
+    <string name="core_channel_alerts">Update alerts</string>
+    <string name="core_notif_waiting_title">Ready for the system update</string>
+    <string name="core_notif_waiting_text">Install the update in Settings › System update.</string>
+    <string name="core_notif_installing_title">Installing system update</string>
+    <string name="core_notif_patching_title">Patching new system</string>
+    <string name="core_notif_patched_title">New system patched</string>
+    <string name="core_notif_patched_text">Restart to finish the update.</string>
+    <string name="core_notif_action_reboot">Restart now</string>
+    <string name="core_notif_updated_title">Updated to %1$s</string>
+    <string name="core_notif_patch_failed_title">Couldn\'t patch the new system</string>
+</resources>

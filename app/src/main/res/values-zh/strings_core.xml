@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 操作结果与状态错误（引擎）。 -->
+    <string name="core_msg_prepare_done">已恢复原厂启动镜像。请前往 设置 › 系统更新 安装更新。</string>
+    <string name="core_msg_cancel_done">已撤销，当前系统已重新修补。</string>
+    <string name="core_msg_patch_done">新系统已修补，重启后完成更新。</string>
+    <string name="core_msg_rebooting">正在重启</string>
+    <string name="core_msg_no_root">未获得 Root 权限。请在 KernelSU 中为本应用授权。</string>
+    <string name="core_msg_root_lost">Root 权限已失效。可使用 fastboot 刷入 %1$s 恢复。</string>
+    <string name="core_msg_not_ab">仅支持 A/B 分区设备。</string>
+    <string name="core_msg_no_kernelsu">未检测到 KernelSU。</string>
+    <string name="core_msg_not_lkm">仅支持 LKM 模式的 KernelSU。</string>
+    <string name="core_msg_unsupported_partition">不支持启动分区“%1$s”。</string>
+    <string name="core_msg_tools_missing">KernelSU 组件不完整，请在 KernelSU 中重新安装。</string>
+    <string name="core_msg_read_failed">无法读取设备状态。</string>
+    <string name="core_msg_unknown_image">无法识别启动镜像。</string>
+    <string name="core_msg_wrong_phase">当前状态下无法执行此操作。</string>
+    <string name="core_msg_backup_missing">未找到 KernelSU 保存的原厂启动镜像。</string>
+    <string name="core_msg_backup_invalid">原厂启动镜像备份校验失败。</string>
+    <string name="core_msg_save_failed">无法将备份保存到 %1$s。</string>
+    <string name="core_msg_backup_dir_invalid">备份目录无效。</string>
+    <string name="core_msg_state_changed">启动分区在操作期间发生变化，未进行刷写。</string>
+    <string name="core_msg_flash_failed">刷写失败，分区未改动。</string>
+    <string name="core_msg_verify_failed">刷写后校验失败，已停止。详情见日志。</string>
+    <string name="core_msg_engine_unknown">无法读取系统更新状态。</string>
+    <string name="core_msg_update_running">正在安装系统更新。</string>
+    <string name="core_msg_update_installed">更新已安装，请先修补新系统。</string>
+    <string name="core_msg_not_installed">系统更新尚未安装完成。</string>
+    <string name="core_msg_install_failed">系统更新安装失败。</string>
+    <string name="core_msg_update_not_applied">更新未生效，设备仍从原系统启动。</string>
+    <string name="core_msg_reboot_failed">无法重启。</string>
+    <string name="core_msg_internal">操作失败。详情见日志。</string>
+
+    <!-- 通知。 -->
+    <string name="core_channel_progress">更新进度</string>
+    <string name="core_channel_alerts">更新提醒</string>
+    <string name="core_notif_waiting_title">可以安装系统更新</string>
+    <string name="core_notif_waiting_text">请前往 设置 › 系统更新 安装更新。</string>
+    <string name="core_notif_installing_title">正在安装系统更新</string>
+    <string name="core_notif_patching_title">正在修补新系统</string>
+    <string name="core_notif_patched_title">新系统已修补</string>
+    <string name="core_notif_patched_text">重启后完成更新。</string>
+    <string name="core_notif_action_reboot">立即重启</string>
+    <string name="core_notif_updated_title">已更新至 %1$s</string>
+    <string name="core_notif_patch_failed_title">未能修补新系统</string>
+</resources>

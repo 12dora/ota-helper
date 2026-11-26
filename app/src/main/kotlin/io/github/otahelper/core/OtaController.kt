@@ -1,5 +1,6 @@
 package io.github.otahelper.core
 
+import android.annotation.SuppressLint
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -98,21 +99,15 @@ data class OtaStatus(
     val error: String? = null,
 )
 
-data class Settings(
-    val autoPatch: Boolean = true,
-    val backupDir: String = DEFAULT_BACKUP_DIR,
-) {
+data class Settings(val autoPatch: Boolean = true, val backupDir: String = DEFAULT_BACKUP_DIR) {
     companion object {
+        // Shown to the user and written through the root shell, which resolves /sdcard itself.
+        @SuppressLint("SdCardPath")
         const val DEFAULT_BACKUP_DIR = "/sdcard/Download/advanced/init_boot"
     }
 }
 
 /** One build's saved images. Paths are absolute device paths; either may be absent. */
-data class Backup(
-    val version: String,
-    val stockPath: String?,
-    val patchedPath: String?,
-    val modifiedMillis: Long,
-)
+data class Backup(val version: String, val stockPath: String?, val patchedPath: String?, val modifiedMillis: Long)
 
 data class ActionResult(val ok: Boolean, val message: String)
