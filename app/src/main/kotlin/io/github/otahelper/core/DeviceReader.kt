@@ -123,9 +123,11 @@ class DeviceReader(private val shell: Shell, private val log: EventLog) {
     suspend fun sha1(path: String): String? = run("sha1sum ${shQuote(path)}", "sha1 $path", HASH_TIMEOUT_MS).firstSha1()
 
     /** SHA-1 of the first [length] bytes of [path]: a flashed image may be shorter than its partition. */
-    suspend fun sha1Prefix(path: String, length: Long): String? =
-        run("head -c $length ${shQuote(path)} | sha1sum", "sha1 $length bytes of $path", HASH_TIMEOUT_MS)
-            .firstSha1()
+    suspend fun sha1Prefix(path: String, length: Long): String? {
+        // pipefail: a failing head must not turn into the SHA-1 of empty input.
+        val command = "set -o pipefail; head -c $length ${shQuote(path)} | sha1sum"
+        return run(command, "sha1 $length bytes of $path", HASH_TIMEOUT_MS).firstSha1()
+    }
 
     /**
      * One-shot update_engine status. `--follow` prints the current status as soon as it connects, then
@@ -159,10 +161,10 @@ class DeviceReader(private val shell: Shell, private val log: EventLog) {
         private val ENGINE_QUERY = """
             mkdir -p ${DevicePaths.WORK_ROOT}; f=${DevicePaths.WORK_ROOT}/engine-$$
             update_engine_client --follow > "${'$'}f" 2>&1 &
-            p=$!; ( sleep 10; kill ${'$'}p ) >/dev/null 2>&1 &
+            p=$!; ( sleep 10; kill ${'$'}p ) >/dev/null 2>&1 & k=$!
             i=0
             while [ ${'$'}i -lt 60 ] && ! grep -q onStatusUpdate "${'$'}f"; do sleep 0.1; i=$((i+1)); done
-            kill ${'$'}p 2>/dev/null; cat "${'$'}f"; rm -f "${'$'}f"
+            kill ${'$'}p ${'$'}k 2>/dev/null; cat "${'$'}f"; rm -f "${'$'}f"
         """.trimIndent()
 
         private val PROBE_SCRIPT = """

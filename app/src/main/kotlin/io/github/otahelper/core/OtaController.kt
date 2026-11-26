@@ -60,6 +60,12 @@ enum class Phase {
 
     /** Inactive slot patched. Next: reboot. */
     PATCHED,
+
+    /**
+     * A flash did not verify, or a partition is in a state the flow cannot explain. [OtaStatus.error] says
+     * what happened and whether rebooting is unsafe. No primary action besides retry; the log is the way out.
+     */
+    FAILED,
 }
 
 enum class BootImageState { PATCHED, STOCK, UNKNOWN }

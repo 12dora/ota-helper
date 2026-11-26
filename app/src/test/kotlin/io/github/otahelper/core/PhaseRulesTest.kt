@@ -7,6 +7,10 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class PhaseRulesTest {
+    private companion object {
+        const val DIR = "/sdcard/x"
+    }
+
     private val probe = Probe(
         abUpdate = true,
         slotSuffix = "_a",
@@ -27,7 +31,11 @@ class PhaseRulesTest {
         inactive: ImageInfo? = null,
         progress: Float = 0f,
         intent: FlowIntent = FlowIntent.NONE,
-    ) = PhaseRules.derive(Snapshot(probe, current, engine?.let { EngineUpdate(it, progress) }, inactive), intent)
+    ) = PhaseRules.derive(
+        Snapshot(probe, current, engine?.let { EngineUpdate(it, progress) }, inactive),
+        FlowRecord(intent = intent, version = if (intent == FlowIntent.NONE) "" else "V1"),
+        DIR,
+    )
 
     @Test
     fun `patched current slot is idle whatever the intent`() {
@@ -81,10 +89,10 @@ class PhaseRulesTest {
     }
 
     @Test
-    fun `unreadable inactive slot stays installed with a problem`() {
-        val result = derive(stock, EngineStatus.UPDATED_NEED_REBOOT, inactive = unknown)
-        assertEquals(Phase.INSTALLED, result.phase)
-        assertEquals(Msg.UNKNOWN_IMAGE, result.problem?.msg)
+    fun `unreadable inactive slot after an install is a failure pointing at pending`() {
+        val result = derive(stock, EngineStatus.UPDATED_NEED_REBOOT, inactive = unknown, intent = FlowIntent.PATCHED)
+        assertEquals(Phase.FAILED, result.phase)
+        assertEquals(Note(Msg.NEW_SLOT_FAILED, "$DIR/pending"), result.problem)
     }
 
     @Test
@@ -97,10 +105,19 @@ class PhaseRulesTest {
     }
 
     @Test
-    fun `unknown current image is unsupported and keeps the intent`() {
-        val result = derive(unknown, intent = FlowIntent.PREPARED)
+    fun `unknown current image in a flow is a failure pointing at the saved images`() {
+        listOf(FlowIntent.PREPARED, FlowIntent.PATCHED).forEach { intent ->
+            val result = derive(unknown, intent = intent)
+            assertEquals(Phase.FAILED, result.phase)
+            assertEquals(intent, result.intent)
+            assertEquals(Note(Msg.CURRENT_SLOT_FAILED, "$DIR/V1"), result.problem)
+        }
+    }
+
+    @Test
+    fun `unknown current image outside a flow is unsupported`() {
+        val result = derive(unknown)
         assertEquals(Phase.UNSUPPORTED, result.phase)
-        assertEquals(FlowIntent.PREPARED, result.intent)
         assertEquals(Msg.UNKNOWN_IMAGE, result.problem?.msg)
     }
 
@@ -121,7 +138,7 @@ class PhaseRulesTest {
         assertNull(probe.copy(partition = "boot").unsupportedReason())
         assertEquals(
             Phase.UNSUPPORTED,
-            PhaseRules.derive(Snapshot(probe.copy(lkm = false), patched), FlowIntent.NONE).phase,
+            PhaseRules.derive(Snapshot(probe.copy(lkm = false), patched), FlowRecord(), DIR).phase,
         )
     }
 
@@ -138,11 +155,28 @@ class PhaseRulesTest {
     fun `lost root after an unplanned reboot points at the saved patched image`() {
         val record = FlowRecord(FlowIntent.PREPARED, "_a", "boot-1", "V1", "init_boot", "c".repeat(40))
         assertEquals(
-            Note(Msg.ROOT_LOST, "/sdcard/x/V1/init_boot_ksu.img"),
-            PhaseRules.noRootProblem(record, "boot-2", "/sdcard/x"),
+            Note(Msg.ROOT_LOST, "$DIR/V1/init_boot_ksu.img"),
+            PhaseRules.noRootProblem(record, "boot-2", "_a", DIR),
         )
-        assertEquals(Note(Msg.NO_ROOT), PhaseRules.noRootProblem(record, "boot-1", "/sdcard/x"))
-        assertEquals(Note(Msg.NO_ROOT), PhaseRules.noRootProblem(FlowRecord(), "boot-2", "/sdcard/x"))
+        assertEquals(Note(Msg.NO_ROOT), PhaseRules.noRootProblem(record, "boot-1", "_a", DIR))
+        assertEquals(Note(Msg.NO_ROOT), PhaseRules.noRootProblem(FlowRecord(), "boot-2", "_a", DIR))
+        // Rebooted into the other slot without patching it: no slot-specific image to offer.
+        assertEquals(Note(Msg.ROOT_LOST_BACKUPS, DIR), PhaseRules.noRootProblem(record, "boot-2", "_b", DIR))
+    }
+
+    @Test
+    fun `lost root after a patched update explains which slot runs`() {
+        val record = FlowRecord(FlowIntent.PATCHED, "_a", "boot-1", "V1", "init_boot", "c".repeat(40))
+        // The update rolled back to the old, still stock slot: its saved patched image restores root.
+        assertEquals(
+            Note(Msg.ROOT_LOST, "$DIR/V1/init_boot_ksu.img"),
+            PhaseRules.noRootProblem(record, "boot-2", "_a", DIR),
+        )
+        assertEquals(
+            Note(Msg.ROOT_LOST_AFTER_UPDATE, "$DIR/pending"),
+            PhaseRules.noRootProblem(record, "boot-2", "_b", DIR),
+        )
+        assertEquals(Note(Msg.ROOT_LOST_BACKUPS, DIR), PhaseRules.noRootProblem(record, "boot-2", "", DIR))
     }
 
     @Test

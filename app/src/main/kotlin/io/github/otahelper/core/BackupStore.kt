@@ -10,19 +10,21 @@ package io.github.otahelper.core
  */
 class BackupStore(private val shell: Shell, private val reader: DeviceReader, private val log: EventLog) {
 
-    /** Copies [source] to `<dir>/<name>` via a temp file, then verifies the copy hashes to [sha1]. */
+    /**
+     * Copies [source] to a temp file in [dir], verifies the copy hashes to [sha1], and only then renames it
+     * to `<dir>/<name>`, so the target is never replaced by unverified bytes.
+     */
     suspend fun save(source: String, dir: String, name: String, sha1: String): Boolean {
         val target = "$dir/$name"
         val temp = "$dir/.$name.tmp"
-        val result = shell.run(
-            "mkdir -p ${shQuote(dir)} && cat ${shQuote(source)} > ${shQuote(temp)} && " +
-                "mv -f ${shQuote(temp)} ${shQuote(target)}",
+        val copy = shell.run(
+            "mkdir -p ${shQuote(dir)} && cat ${shQuote(source)} > ${shQuote(temp)}",
             COPY_TIMEOUT_MS,
         )
-        val copied = if (result.ok) reader.sha1(target) else null
-        val ok = copied == sha1
-        log.log("backup $source -> $target: exit=${result.code} sha1=$copied expected=$sha1 ok=$ok")
-        if (!result.ok) shell.run("rm -f ${shQuote(temp)}")
+        val copied = if (copy.ok) reader.sha1(temp) else null
+        val ok = copied == sha1 && shell.run("mv -f ${shQuote(temp)} ${shQuote(target)}").ok
+        log.log("backup $source -> $target: exit=${copy.code} sha1=$copied expected=$sha1 ok=$ok")
+        if (!ok) shell.run("rm -f ${shQuote(temp)}")
         return ok
     }
 
@@ -58,16 +60,23 @@ class BackupStore(private val shell: Shell, private val reader: DeviceReader, pr
     suspend fun clearPending(root: String): Boolean = isValidRoot(root) &&
         shell.run("rm -rf ${shQuote(pendingDir(root))}").ok
 
+    enum class Promotion { DONE, NOTHING_PENDING, FAILED }
+
     /** Renames `pending/` to [version] once that build has booted. */
-    suspend fun promotePending(root: String, version: String): Boolean {
-        if (!isValidRoot(root) || !isSafeName(version)) return false
+    suspend fun promotePending(root: String, version: String): Promotion {
+        if (!isValidRoot(root) || !isSafeName(version)) return Promotion.FAILED
         val target = versionDir(root, version)
         val pending = pendingDir(root)
         val result = shell.run(
-            "[ -d ${shQuote(pending)} ] && rm -rf ${shQuote(target)} && mv ${shQuote(pending)} ${shQuote(target)}",
+            "[ -d ${shQuote(pending)} ] || exit $NOTHING_PENDING_EXIT; " +
+                "rm -rf ${shQuote(target)} && mv ${shQuote(pending)} ${shQuote(target)}",
         )
         log.log("promote pending -> $version: exit=${result.code}")
-        return result.ok
+        return when (result.code) {
+            0 -> Promotion.DONE
+            NOTHING_PENDING_EXIT -> Promotion.NOTHING_PENDING
+            else -> Promotion.FAILED
+        }
     }
 
     companion object {
@@ -76,6 +85,7 @@ class BackupStore(private val shell: Shell, private val reader: DeviceReader, pr
         private const val STOCK_SUFFIX = "_stock.img"
         private const val PATCHED_SUFFIX = "_ksu.img"
         private const val COPY_TIMEOUT_MS = 120_000L
+        private const val NOTHING_PENDING_EXIT = 3
         private const val MILLIS_PER_SECOND = 1000L
         private val SAFE_NAME = Regex("^[A-Za-z0-9][A-Za-z0-9._-]*$")
         private val SAFE_ROOT = Regex("^/(sdcard|storage/emulated/[0-9]+)(/[A-Za-z0-9][A-Za-z0-9 ._-]*)+$")

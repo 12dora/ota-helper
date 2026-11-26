@@ -5,10 +5,13 @@ interface Platform {
     /** Changes on every boot (Settings.Global.BOOT_COUNT). Readable without root. */
     fun bootId(): String
 
+    /** Running slot suffix ("_a"/"_b") read without root; empty when unknown. */
+    fun slotSuffix(): String
+
     fun text(note: Note): String
 
-    /** Starts or stops the update watcher service. Idempotent. */
-    fun setWatcherRunning(running: Boolean)
+    /** Starts or stops the update watcher service. Idempotent. False when the system refused the start. */
+    fun setWatcherRunning(running: Boolean): Boolean
 
     fun notifyPatched()
 

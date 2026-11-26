@@ -26,22 +26,33 @@ class AndroidPlatform(private val context: Context, private val log: EventLog) :
         }
     }
 
+    override fun slotSuffix(): String = try {
+        val process = ProcessBuilder("getprop", "ro.boot.slot_suffix").start()
+        process.inputStream.bufferedReader().use { it.readText().trim() }.also { process.waitFor() }
+    } catch (e: IOException) {
+        log.log("slot suffix unavailable: ${e.message}")
+        ""
+    }
+
     override fun text(note: Note): String {
         val id = MESSAGES.getValue(note.msg)
         val arg = note.arg
         return if (arg == null) context.getString(id) else context.getString(id, arg)
     }
 
-    override fun setWatcherRunning(running: Boolean) {
+    override fun setWatcherRunning(running: Boolean): Boolean {
         val intent = Intent(context, WatcherService::class.java)
-        try {
+        return try {
             if (running) context.startForegroundService(intent) else context.stopService(intent)
+            true
         } catch (e: IllegalStateException) {
-            // ForegroundServiceStartNotAllowedException: started from the background. The next
-            // refresh from the UI or the boot receiver starts it again.
+            // ForegroundServiceStartNotAllowedException: started from the background. The engine retries
+            // on the next refresh or action.
             log.log("watcher: cannot start now: ${e.message}")
+            false
         } catch (e: SecurityException) {
             log.log("watcher: not allowed: ${e.message}")
+            false
         }
     }
 
@@ -74,6 +85,8 @@ class AndroidPlatform(private val context: Context, private val log: EventLog) :
             Msg.REBOOTING to R.string.core_msg_rebooting,
             Msg.NO_ROOT to R.string.core_msg_no_root,
             Msg.ROOT_LOST to R.string.core_msg_root_lost,
+            Msg.ROOT_LOST_AFTER_UPDATE to R.string.core_msg_root_lost_after_update,
+            Msg.ROOT_LOST_BACKUPS to R.string.core_msg_root_lost_backups,
             Msg.NOT_AB to R.string.core_msg_not_ab,
             Msg.NO_KERNELSU to R.string.core_msg_no_kernelsu,
             Msg.NOT_LKM to R.string.core_msg_not_lkm,
@@ -88,7 +101,8 @@ class AndroidPlatform(private val context: Context, private val log: EventLog) :
             Msg.BACKUP_DIR_INVALID to R.string.core_msg_backup_dir_invalid,
             Msg.STATE_CHANGED to R.string.core_msg_state_changed,
             Msg.FLASH_FAILED to R.string.core_msg_flash_failed,
-            Msg.VERIFY_FAILED to R.string.core_msg_verify_failed,
+            Msg.CURRENT_SLOT_FAILED to R.string.core_msg_current_slot_failed,
+            Msg.NEW_SLOT_FAILED to R.string.core_msg_new_slot_failed,
             Msg.ENGINE_UNKNOWN to R.string.core_msg_engine_unknown,
             Msg.UPDATE_RUNNING to R.string.core_msg_update_running,
             Msg.UPDATE_INSTALLED to R.string.core_msg_update_installed,

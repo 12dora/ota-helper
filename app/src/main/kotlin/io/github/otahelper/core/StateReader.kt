@@ -28,7 +28,7 @@ class StateReader(
         val bootId = platform.bootId()
         val record = store.record()
         if (!reader.rootAvailable()) {
-            val problem = PhaseRules.noRootProblem(record, bootId, settings.backupDir)
+            val problem = PhaseRules.noRootProblem(record, bootId, platform.slotSuffix(), settings.backupDir)
             log.log("refresh: no root (${problem.msg})")
             return Reading(Derivation(Phase.NO_ROOT, record.intent, problem = problem), bootId)
         }
@@ -41,7 +41,7 @@ class StateReader(
         val notice = finishReboot(record, probe, bootId, settings)
         val snapshot = readSnapshot(probe)
         val previous = store.record()
-        val derivation = PhaseRules.derive(snapshot, previous.intent)
+        val derivation = PhaseRules.derive(snapshot, previous, settings.backupDir)
         adoptIntent(previous, derivation, snapshot, bootId)
         log.log("refresh: ${derivation.phase} intent=${derivation.intent} engine=${snapshot.engine?.status}")
         return Reading(derivation, bootId, snapshot, probe, notice, backups.list(settings.backupDir))
@@ -62,25 +62,33 @@ class StateReader(
 
     /**
      * After [OtaController.patch] the next boot should run the other slot. If it does, the pending backup
-     * becomes the new build's folder; if not, the update did not take effect.
+     * becomes the new build's folder; if not, the update did not take effect. The record is cleared only
+     * once that is done, so a promotion that fails (e.g. storage not ready right after boot) is retried by
+     * the next refresh.
      */
     private suspend fun finishReboot(record: FlowRecord, probe: Probe, bootId: String, settings: Settings): Note? {
-        if (record.intent != FlowIntent.PATCHED || record.bootId == bootId) return null
-        store.saveRecord(FlowRecord())
+        if (!awaitsFinish(record, bootId)) return null
         if (probe.slotSuffix == record.slot) {
+            store.saveRecord(FlowRecord())
             log.log("finish: rebooted but still on slot ${probe.slotSuffix}; update not applied")
             return Note(Msg.UPDATE_NOT_APPLIED)
         }
         val version = BackupStore.safeVersion(probe.version)
-        val promoted = backups.promotePending(settings.backupDir, version)
+        val promotion = backups.promotePending(settings.backupDir, version)
+        log.log("finish: now on slot ${probe.slotSuffix}, build ${probe.version}, backup $promotion")
+        if (promotion == BackupStore.Promotion.FAILED) return null
+        store.saveRecord(FlowRecord())
         backups.prune(settings.backupDir, BackupStore.KEEP_VERSIONS, setOf(version))
-        log.log("finish: now on slot ${probe.slotSuffix}, build ${probe.version}, backup promoted=$promoted")
         platform.notifyUpdated(probe.version)
         return null
     }
 
+    private fun awaitsFinish(record: FlowRecord, bootId: String) =
+        record.intent == FlowIntent.PATCHED && record.bootId != bootId
+
     private fun adoptIntent(previous: FlowRecord, derivation: Derivation, snapshot: Snapshot, bootId: String) {
-        if (derivation.intent == previous.intent) return
+        // A patched record from an earlier boot is finished by finishReboot only.
+        if (derivation.intent == previous.intent || awaitsFinish(previous, bootId)) return
         log.log("intent ${previous.intent} -> ${derivation.intent} (from device state)")
         val probe = snapshot.probe
         val record = when (derivation.intent) {

@@ -21,7 +21,11 @@
     <string name="core_msg_backup_dir_invalid">The backup folder isn\'t valid.</string>
     <string name="core_msg_state_changed">The boot partition changed during the operation. Nothing was flashed.</string>
     <string name="core_msg_flash_failed">Flashing failed. The partition wasn\'t changed.</string>
-    <string name="core_msg_verify_failed">Verification after flashing failed. Stopped. See the log for details.</string>
+    <string name="core_msg_root_lost_after_update">The new system started without root access. Its stock and patched boot images are in %1$s.</string>
+    <string name="core_msg_root_lost_backups">Root access was lost. The saved boot images are in %1$s.</string>
+    <string name="core_msg_current_slot_failed">The current system\'s boot partition failed verification. The device may not start after a restart. The stock and patched images are in %1$s; if it doesn\'t start, flash one in fastboot mode.</string>
+    <string name="core_msg_new_slot_failed">The new system\'s boot partition failed verification. Don\'t restart. Its stock image is in %1$s.</string>
+    <string name="core_notif_reboot_failed_title">Couldn\'t restart</string>
     <string name="core_msg_engine_unknown">Couldn\'t read the system update status.</string>
     <string name="core_msg_update_running">A system update is being installed.</string>
     <string name="core_msg_update_installed">The update is already installed. Patch the new system first.</string>

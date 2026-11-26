@@ -30,6 +30,7 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     private companion object {
-        const val TIMEOUT_MS = 50_000L
+        /** Below the broadcast ANR limit; the refresh itself carries on in the engine scope. */
+        const val TIMEOUT_MS = 9_000L
     }
 }

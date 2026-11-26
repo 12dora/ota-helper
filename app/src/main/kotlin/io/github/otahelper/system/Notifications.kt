@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.annotation.StringRes
 import io.github.otahelper.R
 import io.github.otahelper.core.OtaStatus
 import io.github.otahelper.core.Phase
@@ -42,7 +43,7 @@ object Notifications {
     }
 
     /** Ongoing notification of the watcher service, following the flow phase. */
-    fun watcher(context: Context, status: OtaStatus, busy: Boolean): Notification {
+    fun watcher(context: Context, status: OtaStatus): Notification {
         val builder = builder(context, CHANNEL_PROGRESS)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -57,7 +58,8 @@ object Notifications {
                     .setProgress(PERCENT, percent, false)
             }
 
-            status.phase == Phase.INSTALLED || busy -> {
+            // Only the inactive-slot patch is "patching the new system"; a running cancel keeps the waiting text.
+            status.phase == Phase.INSTALLED -> {
                 builder.setContentTitle(context.getString(R.string.core_notif_patching_title))
                     .setProgress(0, 0, true)
             }
@@ -106,9 +108,15 @@ object Notifications {
         post(context, ID_UPDATED, notification)
     }
 
-    fun postAutoPatchFailed(context: Context, message: String) {
+    fun postAutoPatchFailed(context: Context, message: String) =
+        postFailure(context, R.string.core_notif_patch_failed_title, message)
+
+    fun postRebootFailed(context: Context, message: String) =
+        postFailure(context, R.string.core_notif_reboot_failed_title, message)
+
+    private fun postFailure(context: Context, @StringRes title: Int, message: String) {
         val notification = builder(context, CHANNEL_ALERTS)
-            .setContentTitle(context.getString(R.string.core_notif_patch_failed_title))
+            .setContentTitle(context.getString(title))
             .setContentText(message)
             .setStyle(Notification.BigTextStyle().bigText(message))
             .setAutoCancel(true)

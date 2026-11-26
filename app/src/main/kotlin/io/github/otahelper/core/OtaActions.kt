@@ -54,10 +54,10 @@ class OtaActions(
             FlowRecord(FlowIntent.PREPARED, probe.slotSuffix, ctx.reading.bootId, version, probe.partition, stockSha),
         )
         log.log("prepare: restoring stock $stockSha to $currentPath")
-        when (flasher.restoreStock(currentPath, stockSha, stockSize)) {
+        when (flasher.restoreStock(currentPath, stockSha)) {
             stockSha -> Unit
             currentSha -> fail(Msg.FLASH_FAILED)
-            else -> fail(Msg.VERIFY_FAILED)
+            else -> fail(Msg.CURRENT_SLOT_FAILED, dir)
         }
         backups.prune(root, BackupStore.KEEP_VERSIONS, setOf(version))
         return Note(Msg.PREPARE_DONE)
@@ -79,7 +79,7 @@ class OtaActions(
         log.log("cancel: patching current slot $path")
         val outcome = flasher.patch(probe.partition, path, inactiveSlot = false, stockSha1 = sha)
         flasher.cleanup(outcome.workDir)
-        checkFlash(outcome, sha)
+        checkFlash(outcome, sha, PhaseRules.currentSlotFailed(store.record(), ctx.settings.backupDir))
         store.saveRecord(FlowRecord())
         return Note(Msg.CANCEL_DONE)
     }
@@ -106,7 +106,7 @@ class OtaActions(
         log.log("patch: patching inactive slot $path (stock $sha)")
         val outcome = flasher.patch(probe.partition, path, inactiveSlot = true, stockSha1 = sha)
         try {
-            checkFlash(outcome, sha)
+            checkFlash(outcome, sha, PhaseRules.newSlotFailed(root))
             val image = outcome.imagePath
             val imageSha = outcome.imageSha1
             val saved = image != null && imageSha != null &&
@@ -136,10 +136,11 @@ class OtaActions(
         return Note(Msg.REBOOTING)
     }
 
-    private fun checkFlash(outcome: PatchOutcome, stockSha: String) {
+    /** [failure] when the partition changed but did not verify; FLASH_FAILED when ksud never wrote it. */
+    private fun checkFlash(outcome: PatchOutcome, before: String, failure: Note) {
         if (outcome.ok) return
-        // Unchanged partition: ksud stopped before writing. Anything else: written but not as expected.
-        fail(if (outcome.partitionSha1 == stockSha) Msg.FLASH_FAILED else Msg.VERIFY_FAILED)
+        if (outcome.partitionSha1 == before) fail(Msg.FLASH_FAILED)
+        throw ActionFailure(failure)
     }
 
     private fun expectPhase(ctx: ActionContext, phase: Phase): Snapshot {

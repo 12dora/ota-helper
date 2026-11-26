@@ -23,7 +23,14 @@ import kotlin.concurrent.thread
  * A root process cannot be killed by the app, so on timeout the session's pipes are closed and the
  * session is abandoned; the next command starts a fresh one.
  */
-class RootShell(private val log: EventLog, private val io: CoroutineDispatcher = Dispatchers.IO) : Shell {
+class RootShell(
+    private val log: EventLog,
+    private val io: CoroutineDispatcher = Dispatchers.IO,
+    /** Commands tried in order to open a session. */
+    private val suCommands: List<List<String>> = SU_VARIANTS,
+    /** Accept only sessions running as uid 0. Off only in tests against a plain shell. */
+    private val requireRoot: Boolean = true,
+) : Shell {
     private val mutex = Mutex()
     private var session: Session? = null
 
@@ -44,16 +51,18 @@ class RootShell(private val log: EventLog, private val io: CoroutineDispatcher =
 
     override suspend fun isRootAvailable(): Boolean {
         val result = run("id -u", ROOT_CHECK_TIMEOUT_MS)
-        return result.ok && result.stdout.trim() == "0"
+        return isAcceptedUid(result)
     }
+
+    private fun isAcceptedUid(result: ShellResult) = result.ok && (!requireRoot || result.stdout.trim() == "0")
 
     private suspend fun obtainSession(): Session? {
         session?.let { if (it.alive) return it else it.close() }
         session = null
-        for (argv in SU_VARIANTS) {
+        for (argv in suCommands) {
             val started = Session.start(argv) ?: continue
             val check = execute(started, "id -u", ROOT_CHECK_TIMEOUT_MS)
-            if (check.ok && check.stdout.trim() == "0") {
+            if (isAcceptedUid(check)) {
                 session = started
                 return started
             }
@@ -75,13 +84,23 @@ class RootShell(private val log: EventLog, private val io: CoroutineDispatcher =
             discard(target)
             return ShellResult(Shell.CODE_NO_SHELL, "", e.message.orEmpty())
         }
-        val result = withTimeoutOrNull(timeoutMs) {
-            val out = readUntilMarker(target.stdout, token)
-            val err = readUntilMarker(target.stderr, token)
-            if (out == null || err == null) {
-                ShellResult(Shell.CODE_NO_SHELL, out?.text.orEmpty(), err?.text.orEmpty())
-            } else {
-                ShellResult(out.code, out.text, err.text)
+        // If the caller is cancelled mid-read, the command's output is still in the pipes: the session is
+        // out of step and must not be reused.
+        var settled = false
+        val result = try {
+            withTimeoutOrNull(timeoutMs) {
+                val out = readUntilMarker(target.stdout, token, requireCode = true)
+                val err = readUntilMarker(target.stderr, token, requireCode = false)
+                if (out == null || err == null) {
+                    ShellResult(Shell.CODE_NO_SHELL, out?.text.orEmpty(), err?.text.orEmpty())
+                } else {
+                    ShellResult(out.code, out.text, err.text)
+                }
+            }.also { settled = true }
+        } finally {
+            if (!settled) {
+                log.log("root: cancelled while waiting, discarding shell")
+                discard(target)
             }
         }
         if (result == null) {
@@ -106,13 +125,17 @@ class RootShell(private val log: EventLog, private val io: CoroutineDispatcher =
 
     private class Captured(val text: String, val code: Int)
 
-    /** Reads lines until the marker; null when the stream ended first. */
-    private suspend fun readUntilMarker(channel: Channel<String>, token: String): Captured? {
+    /**
+     * Reads lines until the marker; null when the stream ended first. With [requireCode] a marker without
+     * a readable exit status yields [Shell.CODE_NO_SHELL] (fail closed) instead of success.
+     */
+    private suspend fun readUntilMarker(channel: Channel<String>, token: String, requireCode: Boolean): Captured? {
         val lines = ArrayList<String>()
         while (true) {
             val line = channel.receiveCatching().getOrNull() ?: return null
             if (line.startsWith(token)) {
-                val code = line.removePrefix(token).trim().toIntOrNull() ?: 0
+                val parsed = line.removePrefix(token).trim().toIntOrNull()
+                val code = parsed ?: if (requireCode) Shell.CODE_NO_SHELL else 0
                 // The marker is preceded by an injected newline: drop it when it produced an empty line.
                 if (lines.isNotEmpty() && lines.last().isEmpty()) lines.removeAt(lines.lastIndex)
                 return Captured(lines.joinToString("\n"), code)

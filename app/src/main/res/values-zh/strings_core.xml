@@ -21,7 +21,11 @@
     <string name="core_msg_backup_dir_invalid">备份目录无效。</string>
     <string name="core_msg_state_changed">启动分区在操作期间发生变化，未进行刷写。</string>
     <string name="core_msg_flash_failed">刷写失败，分区未改动。</string>
-    <string name="core_msg_verify_failed">刷写后校验失败，已停止。详情见日志。</string>
+    <string name="core_msg_root_lost_after_update">新系统已启动，但 Root 未生效。新系统的原厂与已修补镜像保存在 %1$s。</string>
+    <string name="core_msg_root_lost_backups">Root 权限已失效。启动镜像备份保存在 %1$s。</string>
+    <string name="core_msg_current_slot_failed">当前系统的启动分区未通过校验，重启后可能无法开机。原厂与已修补镜像保存在 %1$s，如无法开机，可在 fastboot 模式下刷入。</string>
+    <string name="core_msg_new_slot_failed">新系统的启动分区未通过校验，请勿重启。新系统的原厂镜像保存在 %1$s。</string>
+    <string name="core_notif_reboot_failed_title">无法重启</string>
     <string name="core_msg_engine_unknown">无法读取系统更新状态。</string>
     <string name="core_msg_update_running">正在安装系统更新。</string>
     <string name="core_msg_update_installed">更新已安装，请先修补新系统。</string>

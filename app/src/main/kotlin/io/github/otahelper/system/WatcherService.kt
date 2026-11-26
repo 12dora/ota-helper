@@ -37,7 +37,7 @@ class WatcherService : Service() {
         ServiceCompat.startForeground(
             this,
             Notifications.ID_WATCHER,
-            Notifications.watcher(this, engine.status.value, engine.busy.value),
+            Notifications.watcher(this, engine.status.value),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
         )
         if (!started) {
@@ -59,7 +59,7 @@ class WatcherService : Service() {
                 ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
                 stopSelf()
             } else {
-                Notifications.updateWatcher(this, Notifications.watcher(this, status, busy))
+                Notifications.updateWatcher(this, Notifications.watcher(this, status))
             }
         }
     }
@@ -80,7 +80,7 @@ class WatcherService : Service() {
     }
 
     private companion object {
-        val DONE_PHASES = setOf(Phase.IDLE, Phase.PATCHED, Phase.NO_ROOT, Phase.UNSUPPORTED)
+        val DONE_PHASES = setOf(Phase.IDLE, Phase.PATCHED, Phase.NO_ROOT, Phase.UNSUPPORTED, Phase.FAILED)
         const val QUICK_EXIT_MS = 10_000L
         const val RESTART_DELAY_MS = 1_000L
         const val BACKOFF_STEP_MS = 5_000L

@@ -11,6 +11,12 @@ enum class Msg {
 
     /** Arg: path of the saved patched image to flash with fastboot. */
     ROOT_LOST,
+
+    /** Booted the patched new slot without root. Arg: folder with the new build's images. */
+    ROOT_LOST_AFTER_UPDATE,
+
+    /** Root lost and the running slot is unclear. Arg: backup folder. */
+    ROOT_LOST_BACKUPS,
     NOT_AB,
     NO_KERNELSU,
     NOT_LKM,
@@ -30,7 +36,12 @@ enum class Msg {
     BACKUP_DIR_INVALID,
     STATE_CHANGED,
     FLASH_FAILED,
-    VERIFY_FAILED,
+
+    /** [Phase.FAILED]: the current slot did not verify. Arg: folder with the running build's images. */
+    CURRENT_SLOT_FAILED,
+
+    /** [Phase.FAILED]: the inactive (new) slot did not verify. Arg: folder with the new build's stock image. */
+    NEW_SLOT_FAILED,
     ENGINE_UNKNOWN,
     UPDATE_RUNNING,
     UPDATE_INSTALLED,
