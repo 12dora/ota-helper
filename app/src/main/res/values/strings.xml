@@ -6,7 +6,7 @@
     <string name="phase_loading_title">Checking device</string>
     <string name="phase_loading_body">Reading root and partition status.</string>
     <string name="phase_no_root_title">Root access unavailable</string>
-    <string name="phase_no_root_body">Grant OTA Helper root access in your root manager, then retry.</string>
+    <string name="phase_no_root_body">Grant OTA Helper root access in KernelSU.</string>
     <string name="phase_unsupported_title">Device not supported</string>
     <string name="phase_unsupported_body">Requires KernelSU in LKM mode on an A/B device.</string>
     <string name="phase_idle_title">Current system patched</string>
@@ -24,6 +24,8 @@
     <string name="phase_patched_title">New system patched</string>
     <string name="phase_patched_body">Restart to finish the update.</string>
     <string name="phase_patched_busy">Restarting.</string>
+    <string name="phase_failed_title">Action not completed</string>
+    <string name="phase_failed_body">The last step didn\'t pass verification. Check the log.</string>
 
     <!-- Stepper. -->
     <string name="step_prepare">Prepare</string>
@@ -48,12 +50,16 @@
     <string name="action_cancel">Cancel</string>
     <string name="action_continue">Continue</string>
     <string name="action_restart">Restart</string>
+    <string name="action_patch_short">Patch</string>
+    <string name="action_view_log">View log</string>
 
     <!-- Confirmation dialogs. -->
     <string name="confirm_prepare_title">Prepare update?</string>
     <string name="confirm_prepare_text">The stock boot image will be restored so the update can install. Root stays active until restart.</string>
     <string name="confirm_cancel_title">Undo preparation?</string>
     <string name="confirm_cancel_text">The current system will be patched again.</string>
+    <string name="confirm_patch_title">Patch new system?</string>
+    <string name="confirm_patch_text">The new system\'s boot image will be patched so root stays after restart.</string>
     <string name="confirm_reboot_title">Restart now?</string>
     <string name="confirm_reboot_text">Your device will restart into the new system.</string>
 
@@ -75,4 +81,13 @@
     <string name="log_title">Log</string>
     <string name="log_copy">Copy log</string>
     <string name="log_empty">No log entries</string>
+
+    <!-- Demo mode (debug builds without root): action results and log lines. -->
+    <string name="demo_started">Demo mode started</string>
+    <string name="demo_refreshed">Refreshed</string>
+    <string name="demo_prepared">Stock image restored</string>
+    <string name="demo_cancelled">Current system patched again</string>
+    <string name="demo_installed">Update installed</string>
+    <string name="demo_patched">New system patched</string>
+    <string name="demo_rebooted">Restarted into the new system</string>
 </resources>

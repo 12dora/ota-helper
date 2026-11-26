@@ -68,6 +68,11 @@ private fun InstalledPatchingPreview() = HomePreview(sampleStatus(Phase.INSTALLE
 @Composable
 private fun PatchedPreview() = HomePreview(sampleStatus(Phase.PATCHED))
 
+@Preview(name = "Light", showSystemUi = true)
+@Preview(name = "Dark", showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun FailedPreview() = HomePreview(sampleStatus(Phase.FAILED))
+
 @Preview(showSystemUi = true)
 @Composable
 private fun ErrorPreview() = HomePreview(sampleStatus(Phase.IDLE).copy(error = "Root was lost after a restart."))

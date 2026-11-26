@@ -19,8 +19,8 @@ private class ConfirmCopy(
     @param:StringRes val confirm: Int,
 )
 
-/** Patching is safe to start right away; everything else that flashes or restarts asks first. */
-private fun UiAction.confirmCopy(): ConfirmCopy? = when (this) {
+/** Every action flashes or restarts, so each asks first in one sentence. */
+private fun UiAction.confirmCopy(): ConfirmCopy = when (this) {
     UiAction.PREPARE -> ConfirmCopy(
         icon = AppIcons.SystemUpdate,
         title = R.string.confirm_prepare_title,
@@ -42,13 +42,18 @@ private fun UiAction.confirmCopy(): ConfirmCopy? = when (this) {
         confirm = R.string.action_restart,
     )
 
-    UiAction.PATCH -> null
+    UiAction.PATCH -> ConfirmCopy(
+        icon = AppIcons.ShieldPlus,
+        title = R.string.confirm_patch_title,
+        text = R.string.confirm_patch_text,
+        confirm = R.string.action_patch_short,
+    )
 }
 
 /** Asks before [action]; calls [onConfirm] or [onDismiss] (the caller clears its dialog state in both). */
 @Composable
 internal fun ConfirmDialog(action: UiAction, onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    val copy = action.confirmCopy() ?: return
+    val copy = action.confirmCopy()
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(imageVector = copy.icon, contentDescription = null) },

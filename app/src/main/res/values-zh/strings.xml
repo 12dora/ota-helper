@@ -6,7 +6,7 @@
     <string name="phase_loading_title">正在检查设备</string>
     <string name="phase_loading_body">正在读取 Root 与分区状态。</string>
     <string name="phase_no_root_title">未获得 Root 权限</string>
-    <string name="phase_no_root_body">请在 Root 管理器中为 OTA 助手授权，然后重试。</string>
+    <string name="phase_no_root_body">在 KernelSU 中为 OTA 助手授予 Root 权限。</string>
     <string name="phase_unsupported_title">不支持此设备</string>
     <string name="phase_unsupported_body">需要 A/B 分区设备，并以 LKM 模式运行 KernelSU。</string>
     <string name="phase_idle_title">当前系统已修补</string>
@@ -24,6 +24,8 @@
     <string name="phase_patched_title">新系统已修补</string>
     <string name="phase_patched_body">重启后即可完成更新。</string>
     <string name="phase_patched_busy">正在重启。</string>
+    <string name="phase_failed_title">操作未完成</string>
+    <string name="phase_failed_body">上一步未通过校验，请查看日志。</string>
 
     <!-- 步骤条。 -->
     <string name="step_prepare">准备</string>
@@ -48,12 +50,16 @@
     <string name="action_cancel">取消</string>
     <string name="action_continue">继续</string>
     <string name="action_restart">重启</string>
+    <string name="action_patch_short">修补</string>
+    <string name="action_view_log">查看日志</string>
 
     <!-- 确认对话框。 -->
     <string name="confirm_prepare_title">准备更新？</string>
     <string name="confirm_prepare_text">将恢复原厂启动镜像以便安装更新，重启前 Root 仍可用。</string>
     <string name="confirm_cancel_title">撤销准备？</string>
     <string name="confirm_cancel_text">将重新修补当前系统。</string>
+    <string name="confirm_patch_title">修补新系统？</string>
+    <string name="confirm_patch_text">将修补新系统的启动镜像，重启后 Root 仍可用。</string>
     <string name="confirm_reboot_title">立即重启？</string>
     <string name="confirm_reboot_text">设备将重启并进入新系统。</string>
 
@@ -75,4 +81,13 @@
     <string name="log_title">日志</string>
     <string name="log_copy">复制日志</string>
     <string name="log_empty">暂无日志</string>
+
+    <!-- 演示模式（无 Root 的调试版本）：操作结果与日志。 -->
+    <string name="demo_started">演示模式已启动</string>
+    <string name="demo_refreshed">已刷新</string>
+    <string name="demo_prepared">已恢复原厂镜像</string>
+    <string name="demo_cancelled">已重新修补当前系统</string>
+    <string name="demo_installed">更新已安装</string>
+    <string name="demo_patched">新系统已修补</string>
+    <string name="demo_rebooted">已重启至新系统</string>
 </resources>

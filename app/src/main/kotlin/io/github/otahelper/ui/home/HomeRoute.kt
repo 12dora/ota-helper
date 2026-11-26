@@ -25,6 +25,9 @@ import io.github.otahelper.ui.UiAction
 
 private const val UPDATER_PACKAGE = "com.android.updater"
 
+/** Hidden in the SDK as `Settings.ACTION_SYSTEM_UPDATE_SETTINGS`; HyperOS routes it to its updater. */
+private const val ACTION_SYSTEM_UPDATE_SETTINGS = "android.settings.SYSTEM_UPDATE_SETTINGS"
+
 /**
  * Stateful entry: wires [MainViewModel] to [HomeScreen] and owns the transient UI (confirmation dialogs, log
  * sheet, Snackbar, notification permission). Refreshes every time the screen resumes.
@@ -54,7 +57,7 @@ internal fun HomeRoute(viewModel: MainViewModel) {
             when (action) {
                 PrimaryAction.PREPARE -> confirming = UiAction.PREPARE
                 PrimaryAction.OPEN_UPDATER -> context.openSystemUpdates()
-                PrimaryAction.PATCH -> viewModel.run(UiAction.PATCH)
+                PrimaryAction.PATCH -> confirming = UiAction.PATCH
                 PrimaryAction.REBOOT -> confirming = UiAction.REBOOT
                 PrimaryAction.RETRY -> viewModel.refresh(userInitiated = true)
             }
@@ -87,14 +90,24 @@ internal fun HomeRoute(viewModel: MainViewModel) {
 private fun Context.canPostNotifications(): Boolean =
     checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-/** Opens the system updater (设置 › 系统更新); falls back to Settings where it is missing. */
+/**
+ * Opens 设置 › 系统更新: the updater's own main activity, else the system-update settings page, else Settings.
+ * Resolving the updater needs `<queries><package android:name="com.android.updater" /></queries>`.
+ */
 private fun Context.openSystemUpdates() {
-    val updater = Intent(Intent.ACTION_MAIN)
-        .addCategory(Intent.CATEGORY_LAUNCHER)
-        .setPackage(UPDATER_PACKAGE)
-    try {
-        startActivity(updater)
-    } catch (ignored: ActivityNotFoundException) {
-        startActivity(Intent(Settings.ACTION_SETTINGS))
-    }
+    val candidates = sequenceOf(
+        { packageManager.getLaunchIntentForPackage(UPDATER_PACKAGE) },
+        { Intent(ACTION_SYSTEM_UPDATE_SETTINGS) },
+        { Intent(Settings.ACTION_SETTINGS) },
+    )
+    candidates.mapNotNull { it() }.firstOrNull(::tryStart)
+}
+
+private fun Context.tryStart(intent: Intent): Boolean = try {
+    startActivity(intent)
+    true
+} catch (ignored: ActivityNotFoundException) {
+    false
+} catch (ignored: SecurityException) {
+    false
 }

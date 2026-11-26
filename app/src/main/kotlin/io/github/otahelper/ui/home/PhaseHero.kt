@@ -58,7 +58,7 @@ internal fun PhaseHero(status: OtaStatus, busy: Boolean, autoPatch: Boolean, mod
     val copy = HeroCopy(
         phase = phase,
         title = stringResource(phase.titleRes()),
-        body = status.error.takeIf { phase == Phase.UNSUPPORTED }
+        body = status.error.takeIf { phase.errorIsBody }
             ?: stringResource(phase.bodyRes(busy, autoPatch)),
     )
     Column(
@@ -121,7 +121,7 @@ private fun PhaseBadge(phase: Phase, spinning: Boolean) {
     val colors = MaterialTheme.colorScheme
     val (container, content) = when (phase) {
         Phase.LOADING -> colors.surfaceContainerHighest to colors.onSurfaceVariant
-        Phase.NO_ROOT, Phase.UNSUPPORTED -> colors.errorContainer to colors.onErrorContainer
+        Phase.NO_ROOT, Phase.UNSUPPORTED, Phase.FAILED -> colors.errorContainer to colors.onErrorContainer
         Phase.PATCHED -> colors.tertiaryContainer to colors.onTertiaryContainer
         else -> colors.primaryContainer to colors.onPrimaryContainer
     }

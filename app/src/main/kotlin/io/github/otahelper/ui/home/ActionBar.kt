@@ -29,14 +29,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import io.github.otahelper.R
 import io.github.otahelper.core.Phase
 import io.github.otahelper.ui.UiAction
 import io.github.otahelper.ui.theme.Dimens
 
+/** What the bar shows; the animation key. */
+private data class BarContent(val primary: PrimaryAction, val secondary: SecondaryAction?)
+
 /**
- * Bottom bar with the phase's single primary button (plus 撤销 while prepared). Hidden while loading and
- * installing. While [busy] every button is disabled and the one that is running shows an inline spinner.
+ * Bottom bar with the phase's single primary button, plus 撤销 while prepared or 查看日志 after a failure.
+ * Hidden while loading and installing. While [busy] every button is disabled and the one that is running shows
+ * an inline spinner.
  */
 @Composable
 internal fun ActionBar(
@@ -46,31 +49,34 @@ internal fun ActionBar(
     running: UiAction?,
     onPrimary: (PrimaryAction) -> Unit,
     onUndo: () -> Unit,
+    onOpenLog: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AnimatedContent(
-        targetState = phase.primaryAction,
+        targetState = phase.primaryAction?.let { BarContent(it, phase.secondaryAction) },
         modifier = modifier,
         transitionSpec = { (fadeIn() togetherWith fadeOut()).using(SizeTransform(clip = false)) },
         label = "action-bar",
-    ) { action ->
-        if (action == null) {
+    ) { content ->
+        if (content == null) {
             Spacer(Modifier.navigationBarsPadding())
         } else {
-            ActionRow(action, busy, refreshing, running, onPrimary, onUndo)
+            val onSecondary = if (content.secondary == SecondaryAction.LOG) onOpenLog else onUndo
+            ActionRow(content, busy, refreshing, running, onPrimary, onSecondary)
         }
     }
 }
 
 @Composable
 private fun ActionRow(
-    action: PrimaryAction,
+    content: BarContent,
     busy: Boolean,
     refreshing: Boolean,
     running: UiAction?,
     onPrimary: (PrimaryAction) -> Unit,
-    onUndo: () -> Unit,
+    onSecondary: () -> Unit,
 ) {
+    val action = content.primary
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
             modifier = Modifier
@@ -80,13 +86,18 @@ private fun ActionRow(
             horizontalArrangement = Arrangement.spacedBy(Dimens.Small),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (action == PrimaryAction.OPEN_UPDATER) {
+            val secondary = content.secondary
+            if (secondary != null) {
                 TextButton(
-                    onClick = onUndo,
-                    enabled = !busy,
+                    onClick = onSecondary,
+                    // The log stays readable while a retry runs.
+                    enabled = !busy || secondary == SecondaryAction.LOG,
                     modifier = Modifier.heightIn(min = Dimens.ButtonHeight),
                 ) {
-                    ButtonLabel(R.string.action_undo, loading = running == UiAction.CANCEL)
+                    ButtonLabel(
+                        secondary.label,
+                        loading = secondary == SecondaryAction.UNDO && running == UiAction.CANCEL,
+                    )
                 }
             }
             val loading = when (action) {

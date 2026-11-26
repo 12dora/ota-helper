@@ -2,6 +2,8 @@
 
 package io.github.otahelper.ui
 
+import android.content.Context
+import io.github.otahelper.R
 import io.github.otahelper.core.ActionResult
 import io.github.otahelper.core.Backup
 import io.github.otahelper.core.BootImageState
@@ -26,18 +28,20 @@ import java.time.temporal.ChronoUnit
 /**
  * In-memory [OtaController] for `@Preview` and for walking through the UI without root. With a [scope], a
  * simulated install starts after [prepare] (progress, then auto patch when enabled) and [reboot] lands on a
- * new build, so the whole flow can be exercised on any device.
+ * new build, so the whole flow can be exercised on any device. Result and log text comes from [text] (string
+ * resources in demo mode), so screenshots read in the device language.
  */
 internal class PreviewOtaController(
     initial: OtaStatus = sampleStatus(Phase.IDLE),
     backups: List<Backup> = sampleBackups(),
     private val scope: CoroutineScope? = null,
+    private val text: (Int) -> String = { "" },
 ) : OtaController {
     private val mutableStatus = MutableStateFlow(initial)
     private val mutableSettings = MutableStateFlow(Settings())
     private val mutableBackups = MutableStateFlow(backups)
     private val mutableBusy = MutableStateFlow(false)
-    private val logLines = MutableStateFlow(listOf("${now()} Preview controller started"))
+    private val logLines = MutableStateFlow(listOf("${now()} ${text(R.string.demo_started)}"))
     private var install: Job? = null
 
     override val status: StateFlow<OtaStatus> = mutableStatus.asStateFlow()
@@ -48,26 +52,26 @@ internal class PreviewOtaController(
     override suspend fun refresh() {
         delay(600)
         mutableStatus.update { if (it.phase == Phase.LOADING) sampleStatus(Phase.IDLE) else it }
-        log("Refreshed")
+        log(text(R.string.demo_refreshed))
     }
 
-    override suspend fun prepare(): ActionResult = act("Stock image restored") {
+    override suspend fun prepare(): ActionResult = act(text(R.string.demo_prepared)) {
         mutableStatus.update { it.copy(phase = Phase.PREPARED, bootImage = BootImageState.STOCK) }
         install = scope?.launch { simulateInstall() }
     }
 
-    override suspend fun cancel(): ActionResult = act("Current system patched") {
+    override suspend fun cancel(): ActionResult = act(text(R.string.demo_cancelled)) {
         install?.cancel()
         mutableStatus.update {
             it.copy(phase = Phase.IDLE, bootImage = BootImageState.PATCHED, engine = EngineStatus.IDLE, progress = null)
         }
     }
 
-    override suspend fun patch(): ActionResult = act("New system patched") {
+    override suspend fun patch(): ActionResult = act(text(R.string.demo_patched)) {
         mutableStatus.update { it.copy(phase = Phase.PATCHED) }
     }
 
-    override suspend fun reboot(): ActionResult = act("Restarted") {
+    override suspend fun reboot(): ActionResult = act(text(R.string.demo_rebooted)) {
         mutableStatus.update {
             sampleStatus(Phase.IDLE).copy(version = NEXT_VERSION, slot = if (it.slot == "A") "B" else "A")
         }
@@ -111,7 +115,7 @@ internal class PreviewOtaController(
         mutableStatus.update {
             it.copy(phase = Phase.INSTALLED, engine = EngineStatus.UPDATED_NEED_REBOOT, progress = null)
         }
-        log("Update installed")
+        log(text(R.string.demo_installed))
         if (mutableSettings.value.autoPatch) patch()
     }
 
@@ -128,6 +132,15 @@ internal class PreviewOtaController(
         /** A plausible [OtaStatus] for [phase], matching the device this app was built for. */
         fun sampleStatus(phase: Phase): OtaStatus = when (phase) {
             Phase.LOADING, Phase.NO_ROOT -> OtaStatus(phase)
+
+            Phase.FAILED -> OtaStatus(
+                phase = phase,
+                version = VERSION,
+                slot = "A",
+                partition = "init_boot",
+                rootManager = "KernelSU 3.3.1",
+                error = "Verification after flashing failed. Don't restart; see the log.",
+            )
 
             Phase.UNSUPPORTED -> OtaStatus(
                 phase = phase,
@@ -168,10 +181,14 @@ internal class PreviewOtaController(
         )
 
         /** Starts in [Phase.LOADING] and simulates the whole flow; for debug builds run without root. */
-        fun demo(): PreviewOtaController = PreviewOtaController(
-            initial = OtaStatus(Phase.LOADING),
-            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-        )
+        fun demo(context: Context): PreviewOtaController {
+            val app = context.applicationContext
+            return PreviewOtaController(
+                initial = OtaStatus(Phase.LOADING),
+                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+                text = app::getString,
+            )
+        }
 
         private fun backup(version: String, millis: Long) = Backup(
             version = version,

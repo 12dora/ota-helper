@@ -49,6 +49,7 @@ internal fun HomeScreen(
                 running = state.running,
                 onPrimary = onPrimary,
                 onUndo = onUndo,
+                onOpenLog = onOpenLog,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -68,7 +69,12 @@ internal fun HomeScreen(
 @Composable
 private fun HomeList(state: UiState, onAutoPatchChange: (Boolean) -> Unit, onOpenLog: () -> Unit) {
     val status = state.status
-    val error = status.error.takeIf { status.phase != Phase.UNSUPPORTED }
+    // The banner only adds information: never when the hero already shows the error, and not for the plain
+    // "grant root" message in NO_ROOT, which the hero body says already (ROOT_LOST with its image path stays).
+    val plainNoRoot = stringResource(R.string.core_msg_no_root)
+    val error = status.error.takeUnless {
+        status.phase.errorIsBody || (status.phase == Phase.NO_ROOT && it == plainNoRoot)
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = Dimens.Gutter, end = Dimens.Gutter, bottom = Dimens.ListBottom),
@@ -92,6 +98,14 @@ private fun HomeList(state: UiState, onAutoPatchChange: (Boolean) -> Unit, onOpe
             Phase.NO_ROOT -> {
                 settingsSection(state.settings, onAutoPatchChange)
                 logEntry(onOpenLog)
+            }
+
+            Phase.FAILED -> {
+                // The log is the way out of a failed flash, so it comes first.
+                logEntry(onOpenLog)
+                deviceSection(status)
+                backupsSection(state.backups)
+                settingsSection(state.settings, onAutoPatchChange)
             }
 
             else -> {

@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
      * whole flow, so the UI can be exercised on a device without root.
      */
     private fun controller(): OtaController = if (BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_DEMO, false)) {
-        PreviewOtaController.demo()
+        PreviewOtaController.demo(this)
     } else {
         (application as OtaApp).controller
     }
