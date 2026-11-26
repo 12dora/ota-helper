@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OTA Helper</string>
+
+    <!-- Hero: one title and one supporting line per phase. -->
+    <string name="phase_loading_title">Checking device</string>
+    <string name="phase_loading_body">Reading root and partition status.</string>
+    <string name="phase_no_root_title">Root access unavailable</string>
+    <string name="phase_no_root_body">Grant OTA Helper root access in your root manager, then retry.</string>
+    <string name="phase_unsupported_title">Device not supported</string>
+    <string name="phase_unsupported_body">Requires KernelSU in LKM mode on an A/B device.</string>
+    <string name="phase_idle_title">Current system patched</string>
+    <string name="phase_idle_body">When a system update is available, prepare first.</string>
+    <string name="phase_idle_busy">Backing up and restoring the stock image.</string>
+    <string name="phase_prepared_title">Ready to install</string>
+    <string name="phase_prepared_body">Install the update in System updates. Don\'t restart until it finishes.</string>
+    <string name="phase_prepared_busy">Patching the current system again.</string>
+    <string name="phase_installing_title">Installing update</string>
+    <string name="phase_installing_auto">The new system will be patched automatically when done.</string>
+    <string name="phase_installing_manual">Patch the new system when installation finishes.</string>
+    <string name="phase_installed_title">Update installed</string>
+    <string name="phase_installed_body">Patch the new system to keep root, then restart.</string>
+    <string name="phase_installed_busy">Patching the new system.</string>
+    <string name="phase_patched_title">New system patched</string>
+    <string name="phase_patched_body">Restart to finish the update.</string>
+    <string name="phase_patched_busy">Restarting.</string>
+
+    <!-- Stepper. -->
+    <string name="step_prepare">Prepare</string>
+    <string name="step_install">Install</string>
+    <string name="step_patch">Patch</string>
+    <string name="step_restart">Restart</string>
+    <string name="step_description">Step %1$d of %2$d: %3$s</string>
+
+    <!-- update_engine stage while installing. -->
+    <string name="engine_downloading">Downloading</string>
+    <string name="engine_verifying">Verifying</string>
+    <string name="engine_finalizing">Finalizing</string>
+    <string name="engine_installing">Installing</string>
+
+    <!-- Buttons. -->
+    <string name="action_prepare">Prepare update</string>
+    <string name="action_open_updater">Open System updates</string>
+    <string name="action_patch">Patch new system</string>
+    <string name="action_reboot">Restart now</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_undo">Undo</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_restart">Restart</string>
+
+    <!-- Confirmation dialogs. -->
+    <string name="confirm_prepare_title">Prepare update?</string>
+    <string name="confirm_prepare_text">The stock boot image will be restored so the update can install. Root stays active until restart.</string>
+    <string name="confirm_cancel_title">Undo preparation?</string>
+    <string name="confirm_cancel_text">The current system will be patched again.</string>
+    <string name="confirm_reboot_title">Restart now?</string>
+    <string name="confirm_reboot_text">Your device will restart into the new system.</string>
+
+    <!-- Sections. -->
+    <string name="section_device">Device</string>
+    <string name="section_settings">Settings</string>
+    <string name="section_backups">Backups</string>
+    <string name="device_version">System version</string>
+    <string name="device_slot">Active slot</string>
+    <string name="device_partition">%1$s status</string>
+    <string name="device_root">Root</string>
+    <string name="image_patched">Patched</string>
+    <string name="image_stock">Stock</string>
+    <string name="value_unknown">Unknown</string>
+    <string name="setting_auto_patch">Auto patch</string>
+    <string name="setting_auto_patch_summary">Patch the new system once installation finishes</string>
+    <string name="setting_backup_dir">Backup location</string>
+    <string name="backups_empty">No backups yet</string>
+    <string name="log_title">Log</string>
+    <string name="log_copy">Copy log</string>
+    <string name="log_empty">No log entries</string>
+</resources>
