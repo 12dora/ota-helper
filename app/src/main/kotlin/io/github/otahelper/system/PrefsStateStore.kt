@@ -22,6 +22,7 @@ class PrefsStateStore(private val prefs: SharedPreferences) : StateStore {
         version = prefs.getString(KEY_VERSION, null).orEmpty(),
         partition = prefs.getString(KEY_PARTITION, null).orEmpty(),
         stockSha1 = prefs.getString(KEY_STOCK_SHA1, null).orEmpty(),
+        patchedSha1 = prefs.getString(KEY_PATCHED_SHA1, null).orEmpty(),
     )
 
     override fun saveRecord(record: FlowRecord) {
@@ -32,6 +33,7 @@ class PrefsStateStore(private val prefs: SharedPreferences) : StateStore {
             putString(KEY_VERSION, record.version)
             putString(KEY_PARTITION, record.partition)
             putString(KEY_STOCK_SHA1, record.stockSha1)
+            putString(KEY_PATCHED_SHA1, record.patchedSha1)
         }
     }
 
@@ -55,6 +57,7 @@ class PrefsStateStore(private val prefs: SharedPreferences) : StateStore {
         private const val KEY_VERSION = "version"
         private const val KEY_PARTITION = "partition"
         private const val KEY_STOCK_SHA1 = "stock_sha1"
+        private const val KEY_PATCHED_SHA1 = "patched_sha1"
         private const val KEY_AUTO_PATCH = "auto_patch"
         private const val KEY_BACKUP_DIR = "backup_dir"
     }

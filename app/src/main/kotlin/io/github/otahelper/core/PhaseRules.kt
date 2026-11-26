@@ -37,7 +37,7 @@ object PhaseRules {
         return when (snapshot.current.state) {
             BootImageState.PATCHED -> Derivation(Phase.IDLE, FlowIntent.NONE)
 
-            BootImageState.STOCK -> deriveStock(snapshot, backupDir)
+            BootImageState.STOCK -> deriveStock(snapshot, record, backupDir)
 
             BootImageState.UNKNOWN -> if (intent == FlowIntent.NONE) {
                 Derivation(Phase.UNSUPPORTED, intent, problem = Note(Msg.UNKNOWN_IMAGE))
@@ -56,11 +56,13 @@ object PhaseRules {
     /** The inactive slot did not verify: point at the new build's saved stock image. */
     fun newSlotFailed(backupDir: String) = Note(Msg.NEW_SLOT_FAILED, BackupStore.pendingDir(backupDir))
 
-    private fun deriveStock(snapshot: Snapshot, backupDir: String): Derivation {
+    private fun deriveStock(snapshot: Snapshot, record: FlowRecord, backupDir: String): Derivation {
         val engine = snapshot.engine
         return when {
             engine == null || engine.status == EngineStatus.UNKNOWN ->
                 Derivation(Phase.PREPARED, FlowIntent.PREPARED, problem = Note(Msg.ENGINE_UNKNOWN))
+
+            stillOurPatch(snapshot, record) -> Derivation(Phase.PATCHED, FlowIntent.PATCHED)
 
             engine.status == EngineStatus.UPDATED_NEED_REBOOT -> deriveInstalled(snapshot.inactive, backupDir)
 
@@ -73,6 +75,29 @@ object PhaseRules {
             else -> Derivation(Phase.PREPARED, FlowIntent.PREPARED)
         }
     }
+
+    /**
+     * After our patch, update_engine may report FINALIZING again (HyperOS runs an async optional
+     * postinstall for about a minute, then returns to UPDATED_NEED_REBOOT). Postinstall never writes
+     * init_boot, so the flow stays PATCHED as long as the inactive slot still holds exactly the image we
+     * flashed. Any other running stage (CLEANUP_PREVIOUS_UPDATE, DOWNLOADING, VERIFYING) means a new
+     * payload is being applied, and a patched inactive slot with any other hash proves nothing.
+     */
+    fun stillOurPatch(snapshot: Snapshot, record: FlowRecord): Boolean {
+        val inactive = snapshot.inactive
+        val status = snapshot.engine?.status ?: return false
+        return listOf(
+            record.intent == FlowIntent.PATCHED,
+            record.patchedSha1.isNotEmpty(),
+            inactive?.state == BootImageState.PATCHED,
+            inactive?.sha1 == record.patchedSha1,
+            keepsOurPatch(status),
+        ).all { it }
+    }
+
+    /** update_engine states in which an inactive slot we patched is still the one that will boot. */
+    fun keepsOurPatch(status: EngineStatus?): Boolean =
+        status == EngineStatus.UPDATED_NEED_REBOOT || status == EngineStatus.FINALIZING
 
     private fun deriveInstalled(inactive: ImageInfo?, backupDir: String): Derivation = when (inactive?.state) {
         BootImageState.PATCHED -> Derivation(Phase.PATCHED, FlowIntent.PATCHED)

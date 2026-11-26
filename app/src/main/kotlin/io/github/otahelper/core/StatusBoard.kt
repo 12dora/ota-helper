@@ -103,7 +103,10 @@ class StatusBoard(private val platform: Platform, private val log: EventLog, pri
             val snapshot = reading.snapshot ?: return
             val current = snapshot.current.state == BootImageState.STOCK
             if (!current || engineBusy() || update == snapshot.engine) return
-            val next = snapshot.copy(engine = update, inactive = null)
+            // The last inactive-slot reading only carries over for postinstall after our patch
+            // (PATCHED -> FINALIZING); any other status needs a fresh reading of that slot.
+            val keepInactive = reading.derivation.phase == Phase.PATCHED && update.status == EngineStatus.FINALIZING
+            val next = snapshot.copy(engine = update, inactive = snapshot.inactive.takeIf { keepInactive })
             val derivation = PhaseRules.derive(next, record, settings().backupDir)
             render(reading.copy(snapshot = next, derivation = derivation, notice = null), ensureWatcher = false)
         }

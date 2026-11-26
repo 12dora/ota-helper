@@ -39,7 +39,7 @@ class StateReader(
             return Reading(Derivation(Phase.UNSUPPORTED, record.intent, problem = reason), bootId, probe = probe)
         }
         val notice = finishReboot(record, probe, bootId, settings)
-        val snapshot = readSnapshot(probe)
+        val snapshot = readSnapshot(probe, store.record())
         val previous = store.record()
         val derivation = PhaseRules.derive(snapshot, previous, settings.backupDir)
         adoptIntent(previous, derivation, snapshot, bootId)
@@ -47,12 +47,19 @@ class StateReader(
         return Reading(derivation, bootId, snapshot, probe, notice, backups.list(settings.backupDir))
     }
 
-    /** Current slot always; update_engine only when the current slot is stock; inactive slot only once installed. */
-    private suspend fun readSnapshot(probe: Probe): Snapshot {
+    /**
+     * Current slot always; update_engine only when the current slot is stock; the inactive slot once
+     * installed, or while our patch may still be on it (see [PhaseRules.stillOurPatch]).
+     */
+    private suspend fun readSnapshot(probe: Probe, record: FlowRecord): Snapshot {
         val current = reader.inspect(probe.partitionPath(inactive = false))
         if (current.state != BootImageState.STOCK) return Snapshot(probe, current)
         val engine = reader.engineStatus()
-        val inactive = if (engine?.status == EngineStatus.UPDATED_NEED_REBOOT) {
+        val ourPatch = record.intent == FlowIntent.PATCHED && record.patchedSha1.isNotEmpty()
+        // Read the inactive slot only when the derivation can use it.
+        val useful = engine?.status == EngineStatus.UPDATED_NEED_REBOOT ||
+            (ourPatch && PhaseRules.keepsOurPatch(engine?.status))
+        val inactive = if (useful) {
             reader.inspect(probe.partitionPath(inactive = true))
         } else {
             null
@@ -101,6 +108,8 @@ class StateReader(
                 version = previous.version.ifEmpty { BackupStore.safeVersion(probe.version) },
                 partition = probe.partition,
                 stockSha1 = previous.stockSha1.ifEmpty { snapshot.current.sha1.orEmpty() },
+                // Only a hash we verified ourselves may keep PATCHED through a running install stage.
+                patchedSha1 = if (derivation.intent == FlowIntent.PATCHED) previous.patchedSha1 else "",
             )
         }
         store.saveRecord(record)

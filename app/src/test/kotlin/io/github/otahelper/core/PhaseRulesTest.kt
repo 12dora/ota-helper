@@ -88,6 +88,56 @@ class PhaseRulesTest {
         assertEquals(FlowIntent.PATCHED, result.intent)
     }
 
+    private val ours = ImageInfo(BootImageState.PATCHED, "d".repeat(40), 1, "e".repeat(40))
+    private val patchedRecord = FlowRecord(intent = FlowIntent.PATCHED, version = "V1", patchedSha1 = "d".repeat(40))
+
+    private fun deriveWith(record: FlowRecord, engine: EngineStatus, inactive: ImageInfo?) =
+        PhaseRules.derive(Snapshot(probe, stock, EngineUpdate(engine, 0f), inactive), record, DIR)
+
+    @Test
+    fun `postinstall after our patch stays patched while the inactive slot holds our image`() {
+        listOf(EngineStatus.FINALIZING, EngineStatus.UPDATED_NEED_REBOOT).forEach { engine ->
+            val result = deriveWith(patchedRecord, engine, ours)
+            assertEquals(Phase.PATCHED, result.phase, engine.name)
+            assertEquals(FlowIntent.PATCHED, result.intent)
+        }
+    }
+
+    @Test
+    fun `a new payload after our patch is installing even before it reaches init_boot`() {
+        listOf(EngineStatus.CLEANUP_PREVIOUS_UPDATE, EngineStatus.DOWNLOADING, EngineStatus.VERIFYING).forEach {
+            val result = deriveWith(patchedRecord, it, ours)
+            assertEquals(Phase.INSTALLING, result.phase, it.name)
+            assertEquals(FlowIntent.PREPARED, result.intent)
+        }
+    }
+
+    @Test
+    fun `a patched inactive slot with another hash during an install is installing`() {
+        val other = ours.copy(sha1 = "f".repeat(40))
+        val result = deriveWith(patchedRecord, EngineStatus.DOWNLOADING, other)
+        assertEquals(Phase.INSTALLING, result.phase)
+        assertEquals(FlowIntent.PREPARED, result.intent)
+    }
+
+    @Test
+    fun `an old patched image on the inactive slot in a fresh flow is installing`() {
+        val fresh = FlowRecord(intent = FlowIntent.PREPARED, version = "V1")
+        assertEquals(Phase.INSTALLING, deriveWith(fresh, EngineStatus.DOWNLOADING, ours).phase)
+        assertEquals(Phase.INSTALLING, deriveWith(fresh, EngineStatus.FINALIZING, ours).phase)
+        // A record without a stored hash (older app version) gets no benefit of the doubt either.
+        val legacy = patchedRecord.copy(patchedSha1 = "")
+        assertEquals(Phase.INSTALLING, deriveWith(legacy, EngineStatus.FINALIZING, ours).phase)
+    }
+
+    @Test
+    fun `idle or failed engine after our patch keeps the old behaviour`() {
+        assertEquals(Phase.PREPARED, deriveWith(patchedRecord, EngineStatus.IDLE, ours).phase)
+        val failed = deriveWith(patchedRecord, EngineStatus.REPORTING_ERROR_EVENT, ours)
+        assertEquals(Phase.PREPARED, failed.phase)
+        assertEquals(Msg.INSTALL_FAILED, failed.problem?.msg)
+    }
+
     @Test
     fun `unreadable inactive slot after an install is a failure pointing at pending`() {
         val result = derive(stock, EngineStatus.UPDATED_NEED_REBOOT, inactive = unknown, intent = FlowIntent.PATCHED)

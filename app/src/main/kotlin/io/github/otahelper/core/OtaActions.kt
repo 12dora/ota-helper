@@ -122,6 +122,7 @@ class OtaActions(
                 slot = probe.slotSuffix,
                 bootId = ctx.reading.bootId,
                 partition = probe.partition,
+                patchedSha1 = outcome.partitionSha1.orEmpty(),
             ),
         )
         return Note(Msg.PATCH_DONE)
@@ -129,7 +130,9 @@ class OtaActions(
 
     /** PATCHED: reboot into the patched new slot. */
     suspend fun reboot(ctx: ActionContext): Note {
-        expectPhase(ctx, Phase.PATCHED)
+        val snapshot = expectPhase(ctx, Phase.PATCHED)
+        // PATCHED also covers update_engine's optional postinstall after the patch; reboot only once it is done.
+        ensure(snapshot.engine?.status == EngineStatus.UPDATED_NEED_REBOOT, Msg.UPDATE_RUNNING)
         val result = flasher.reboot()
         // A positive exit code means both reboot commands refused; negative means the shell went away.
         ensure(result.code <= 0, Msg.REBOOT_FAILED)

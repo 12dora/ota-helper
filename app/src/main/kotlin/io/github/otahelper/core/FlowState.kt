@@ -23,6 +23,8 @@ data class FlowRecord(
     val partition: String = "",
     /** SHA-1 of the running build's stock image. */
     val stockSha1: String = "",
+    /** SHA-1 of the whole inactive partition right after [OtaController.patch] verified it. */
+    val patchedSha1: String = "",
 )
 
 /** Small persistent store for the flow record and settings. Writes are synchronous and durable. */
